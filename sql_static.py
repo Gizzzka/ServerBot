@@ -29,6 +29,9 @@ INSERT_PERIOD_OF_ACTION = """INSERT INTO Period_Of_Action(ServerId, ServerUrl, S
 DROP_PERIOD_OF_ACTION = """DROP TABLE IF EXISTS Period_Of_Action"""
 #
 #
+GET_ALL_TITLES = """SELECT Title FROM ServerTable"""
+GET_ALL_IPs = """SELECT Ip FROM ServerTable"""
+#
 GET_ALL_INFO = """SELECT ServerTable.Title, ServerTable.Ip, ServerTable.Login, ServerTable.Password, 
                          ServerTable.Port, ServerTable.Ssh, 
                          Period_Of_Action.ServerUrl, Period_Of_Action.StartDate, Period_Of_Action.EndDate, 

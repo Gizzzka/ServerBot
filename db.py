@@ -29,45 +29,72 @@ class ServerTable(Database):
     def __init__(self):
         super().__init__()
 
-    def insert_into_server_table(self, title, ip, login, password, port, ssh):
-        self.table_title = title
+    def insert_into_server_table(self, data):
+        # data = [title, ip, login, password, port, ssh]
+
+        self.table_title = data[0]
 
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
-            cur.execute(static.INSERT_SERVER_TABLE,
-                        (title, ip, login, password, port, ssh))
+            cur.execute(static.INSERT_SERVER_TABLE, data)
 
 
 class PeriodOfAction(Database):
     def __init__(self):
         super().__init__()
 
-    def insert_into_period_of_action(self, server_url, start_date, end_date, price):
+    def insert_into_period_of_action(self, data):
+        # data = [server_url, start_date, end_date, price]
+
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
             cur.execute(static.GET_SERVER_ID, [self.table_title])
             self.table_id = cur.fetchall()[0][0]
 
-            cur.execute(static.INSERT_PERIOD_OF_ACTION,
-                        (self.table_id, server_url, start_date, end_date, price))
+            data_lst = [self.table_id] + [elem for elem in data]
+            cur.execute(static.INSERT_PERIOD_OF_ACTION, data_lst)
 
 
 class Operator(ServerTable, PeriodOfAction):
     def __init__(self):
         super().__init__()
 
+    def get_all_titles_and_ips(self):
+        with sq.connect(self.db_name, detect_types=self.args) as con:
+            cur = con.cursor()
+
+            cur.execute(static.GET_ALL_TITLES)
+            titles_lst = cur.fetchall()
+            titles_lst = [title[0] for title in titles_lst]
+
+            cur.execute(static.GET_ALL_IPs)
+            ips_lst = cur.fetchall()
+            ips_lst = [ip[0] for ip in ips_lst]
+
+            result = {}
+            for title, ip in zip(titles_lst, ips_lst):
+                result[title] = ip
+
+            return result
+
     def get_all_info(self):
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
+
+            cur.execute(static.GET_ALL_TITLES)
+            titles_lst = cur.fetchall()[0]
 
             cur.execute(static.GET_ALL_INFO)
             info = cur.fetchall()[0]
 
             final = {}
-            for key, value in zip(self.table_template, info):
-                final[key] = value
+            for primary_key in titles_lst:
+                final[primary_key] = {}
+
+                for key, value in zip(self.table_template, info):
+                    final[primary_key][key] = value
 
             return final
 
@@ -76,7 +103,7 @@ class Operator(ServerTable, PeriodOfAction):
             cur = con.cursor()
 
             cur.execute(static.GET_BY_TITLE, [title])
-            info = cur.fetchall()[0]
+            info = list(cur.fetchall()[0])
 
             final = {}
             for key, value in zip(self.table_template, info):
@@ -102,12 +129,14 @@ def main():
     test = Operator()
 
     try:
-        test.init_db()
-        test.insert_into_server_table('Title', 420, 'Login', 'Password', 69, 'SSH')
-        test.insert_into_period_of_action('URL', date(2021, 7, 3), date(2021, 7, 4), 228)
-        test.get_all_info()
-        test.get_by_title('Title')
-        test.get_by_ip(420)
+        # test.init_db()
+        # test.insert_into_server_table(['Title', 420, 'Login', 'Password', 69, 'SSH'])
+        # test.insert_into_period_of_action(['URL', date(2021, 7, 3), date(2021, 7, 4), 228])
+        # test.get_all_info()
+        # pprint(test.get_all_info())
+        # print(test.get_by_title('Второе тестирование'))
+        test.get_by_ip(555)
+        # test.get_all_titles_and_ips()
         print('Everything went well')
 
     except Exception as ex:
