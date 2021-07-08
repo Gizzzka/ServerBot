@@ -11,6 +11,7 @@ class Database:
         self.args = sq.PARSE_DECLTYPES
         self.table_title = ''
         self.table_id = 0
+        self.user_id = 0
         self.table_template = ['Title', 'Ip', 'Login', 'Password', 'Port', 'Ssh',
                                'ServerUrl', 'StartDate', 'EndDate', 'Price']
 
@@ -30,9 +31,10 @@ class ServerTable(Database):
         super().__init__()
 
     def insert_into_server_table(self, data):
-        # data = [title, ip, login, password, port, ssh]
+        # data = [title, ip, login, password, port, ssh, user_id]
 
         self.table_title = data[0]
+        self.user_id = data[-1]
 
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
@@ -45,12 +47,12 @@ class PeriodOfAction(Database):
         super().__init__()
 
     def insert_into_period_of_action(self, data):
-        # data = [server_url, start_date, end_date, price]
+        # data = [server_url, start_date, end_date, price, user_id]
 
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
-            cur.execute(static.GET_SERVER_ID, [self.table_title])
+            cur.execute(static.GET_SERVER_ID, [self.table_title, self.user_id])
             self.table_id = cur.fetchall()[0][0]
 
             data_lst = [self.table_id] + [elem for elem in data]
@@ -61,15 +63,15 @@ class Operator(ServerTable, PeriodOfAction):
     def __init__(self):
         super().__init__()
 
-    def get_all_titles_and_ips(self):
+    def get_all_titles_and_ips(self, user_id):
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
-            cur.execute(static.GET_ALL_TITLES)
+            cur.execute(static.GET_ALL_TITLES, [user_id])
             titles_lst = cur.fetchall()
             titles_lst = [title[0] for title in titles_lst]
 
-            cur.execute(static.GET_ALL_IPs)
+            cur.execute(static.GET_ALL_IPs, [user_id])
             ips_lst = cur.fetchall()
             ips_lst = [ip[0] for ip in ips_lst]
 
@@ -79,15 +81,17 @@ class Operator(ServerTable, PeriodOfAction):
 
             return result
 
-    def get_all_info(self):
+    def get_all_info(self, user_id):
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
-            cur.execute(static.GET_ALL_TITLES)
-            titles_lst = cur.fetchall()[0]
+            cur.execute(static.GET_ALL_TITLES, [user_id])
+            titles_lst = cur.fetchall()
+            titles_lst = [title[0] for title in titles_lst]
 
-            cur.execute(static.GET_ALL_INFO)
-            info = cur.fetchall()[0]
+            cur.execute(static.GET_ALL_INFO, [user_id, user_id])
+            info = cur.fetchall()
+            info = [info[0] for info in info]
 
             final = {}
             for primary_key in titles_lst:
@@ -98,11 +102,11 @@ class Operator(ServerTable, PeriodOfAction):
 
             return final
 
-    def get_by_title(self, title):
+    def get_by_title(self, title, user_id):
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
-            cur.execute(static.GET_BY_TITLE, [title])
+            cur.execute(static.GET_BY_TITLE, [title, user_id, user_id])
             info = list(cur.fetchall()[0])
 
             final = {}
@@ -111,11 +115,11 @@ class Operator(ServerTable, PeriodOfAction):
 
             return final
 
-    def get_by_ip(self, ip):
+    def get_by_ip(self, ip, user_id):
         with sq.connect(self.db_name, detect_types=self.args) as con:
             cur = con.cursor()
 
-            cur.execute(static.GET_BY_IP, [ip])
+            cur.execute(static.GET_BY_IP, [ip, user_id, user_id])
             info = cur.fetchall()[0]
 
             final = {}
@@ -132,11 +136,11 @@ def main():
         # test.init_db()
         # test.insert_into_server_table(['Title', 420, 'Login', 'Password', 69, 'SSH'])
         # test.insert_into_period_of_action(['URL', date(2021, 7, 3), date(2021, 7, 4), 228])
-        # test.get_all_info()
-        # pprint(test.get_all_info())
-        # print(test.get_by_title('Второе тестирование'))
-        test.get_by_ip(555)
-        # test.get_all_titles_and_ips()
+        # test.get_all_info(277040234)
+        pprint(test.get_all_info(277040234))
+        print(test.get_by_title('Второе тестирование', 277040234))
+        pprint(test.get_by_ip(555, 277040234))
+        pprint(test.get_all_titles_and_ips(277040234))
         print('Everything went well')
 
     except Exception as ex:
